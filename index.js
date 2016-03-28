@@ -180,7 +180,7 @@ class WorkerConnection extends events.EventEmitter {
 
 		_this.client.on('close', function () {
 			_this._onConnectionClose();
-		});		
+		});
 
 		_this.client.connect();
 	}
