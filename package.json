@@ -1,28 +1,27 @@
 {
   "name": "bsw",
-  "version": "1.0.0",
-  "description": "Beanstalkd worker for co/generators/Promise based handlers",
-  "main": "index.js",
-  "scripts": {
-    "test": "mocha test/index.js"
-  },
-  "repository": {
-    "type": "git",
-    "url": "github.com/AfterShip/bsw.git"
-  },
-  "keywords": [
-    "beanstalk",
-    "beastalkd",
-    "bs",
-    "queue",
-    "worker",
-    "fivebeans"
-  ],
+  "description": "Beanstalkd worker for co/Promise based handlers",
+  "version": "0.0.1",
+  "homepage": "https://github.com/AfterShip/bsw",
   "author": {
     "name": "AfterShip",
     "email": "support@aftership.com"
   },
-  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/AfterShip/bsw.git"
+  },
+  "bugs": {
+    "url": "https://github.com/AfterShip/bsw/issues"
+  },
+  "main": "index.js",
+  "engines": {
+    "node": ">= 4.2"
+  },
+  "scripts": {
+    "lint": "grunt lint",
+    "test": "grunt lint && grunt coverage"
+  },
   "dependencies": {
     "bluebird": "^3.3.4",
     "co": "^4.6.0",
@@ -33,8 +32,29 @@
   "devDependencies": {
     "chai": "^3.5.0",
     "co-mocha": "^1.1.2",
-    "mocha": "^2.4.5",
+    "eslint": "^1.10.3",
+    "eslint-config-aftership": "^1.5.0",
+    "grunt": "^0.4.5",
+    "grunt-eslint": "^17.3.1",
+    "grunt-mocha-istanbul": "^3.0.1",
+    "istanbul": "^0.4.1",
+    "load-grunt-config": "^0.19.1",
+    "mocha": "^2.3.4",
+    "pre-commit": "^1.1.2",
     "sinon": "^1.17.3",
     "sinon-chai": "^2.8.0"
-  }
+  },
+  "keywords": [
+    "beanstalk",
+    "beastalkd",
+    "bs",
+    "fivebeans",
+    "queue",
+    "worker"
+  ],
+  "license": "MIT",
+  "pre-commit": [
+    "lint"
+  ],
+  "private": false
 }

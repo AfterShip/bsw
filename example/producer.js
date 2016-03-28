@@ -5,9 +5,9 @@ const fs = require('fs');
 const config = JSON.parse(fs.readFileSync(`${__dirname}/config.json`));
 
 let client = new Client(config.host, config.port);
-client.on('connect', function() {
+client.on('connect', function () {
 	console.log('connected');
-	client.use(config.tube, function(err, tname) {
+	client.use(config.tube, function (err, tname) {
 		console.log('used');
 		client.put(0, 0, 60, JSON.stringify({throw: true, result: 'success'}), () => {});
 		client.put(0, 0, 60, JSON.stringify({throw: true, result: 'bury'}), () => {});
