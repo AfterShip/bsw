@@ -11,6 +11,7 @@ BSW is a Node.js framework for beanstalkd workers
   - [Post processing](#post-processing)
 - [bsw worker class](#bsw-worker-class)
   - [Full example](#full-example)
+- [Contributors](#contributors)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -202,4 +203,4 @@ To run, copy the project, then:
 ```
 
 ## Contributors
-- Fedor Korshunov - [view contributions](https://github.com/postmen/sdk-php/commits?author=fedor)
+- Fedor Korshunov - [view contributions](https://github.com/aftership/bsw/commits?author=fedor)
