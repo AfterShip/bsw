@@ -1,0 +1,40 @@
+{
+  "name": "bsw",
+  "version": "1.0.0",
+  "description": "Beanstalkd worker for co/generators/Promise based handlers",
+  "main": "index.js",
+  "scripts": {
+    "test": "mocha test/index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "github.com/AfterShip/bsw.git"
+  },
+  "keywords": [
+    "beanstalk",
+    "beastalkd",
+    "bs",
+    "queue",
+    "worker",
+    "fivebeans"
+  ],
+  "author": {
+    "name": "AfterShip",
+    "email": "support@aftership.com"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "bluebird": "^3.3.4",
+    "co": "^4.6.0",
+    "fivebeans": "^1.3.1",
+    "lodash": "^4.6.1",
+    "moment": "^2.12.0"
+  },
+  "devDependencies": {
+    "chai": "^3.5.0",
+    "co-mocha": "^1.1.2",
+    "mocha": "^2.4.5",
+    "sinon": "^1.17.3",
+    "sinon-chai": "^2.8.0"
+  }
+}
