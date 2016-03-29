@@ -166,9 +166,9 @@ BSW worker class is used to connect to beanstalkd server and subscribe to a tube
 
 BSW constructor takes configuration object:
 - **handler:** handler class or path to handler
-- **host:** beanstalkd host (default: '127.0.0.1')
+- **host:** beanstalkd host (default: `'127.0.0.1'`)
 - **port:** beanstalkd port (default: `11300`)
-- **tube:** beanstalkd tube (default: `default`)
+- **tube:** beanstalkd tube (default: `'default'`)
 - **max:** Max number of simultaneous jobs reserved (default: `1`)
 - **log:** Enable jobs logging (default: `true`)
 
