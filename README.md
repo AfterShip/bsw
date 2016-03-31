@@ -1,4 +1,4 @@
-BSW is a Node.js framework for beanstalkd workers
+BSW is a Node.js framework for beanstalkd workers.
 
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
