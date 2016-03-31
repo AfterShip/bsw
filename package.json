@@ -1,7 +1,7 @@
 {
   "name": "bsw",
-  "description": "Beanstalkd worker for co/Promise based handlers",
-  "version": "0.0.1",
+  "description": "Beanstalkd worker framework for co/Promise based handlers",
+  "version": "1.0.0",
   "homepage": "https://github.com/AfterShip/bsw",
   "author": {
     "name": "AfterShip",
