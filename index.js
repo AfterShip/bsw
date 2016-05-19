@@ -15,6 +15,7 @@ class WorkerConnection extends events.EventEmitter {
 
 		this.client = null;
 		this.reserved_counter = 0;
+		this.parse = _.includes(config_keys, 'parse') ? config.parse : true;
 		this.logging = _.includes(config_keys, 'log') ? config.log : true;
 		this.host = _.includes(config_keys, 'host') ? config.host : '127.0.0.1';
 		this.port = _.includes(config_keys, 'port') ? config.port : 11300;
@@ -244,10 +245,14 @@ class WorkerConnection extends events.EventEmitter {
 					let job_id = res[0];
 					let job_info = {tube: _this.tube, id: job_id};
 					let payload = null;
-					try {
-						payload = JSON.parse(res[1]);
-					} catch (parse_error) {
+					if (_this.parse === false) {
 						payload = res[1].toString('utf8');
+					} else {
+						try {
+							payload = JSON.parse(res[1]);
+						} catch (parse_error) {
+							payload = res[1].toString('utf8');
+						}
 					}
 					_this.reserved_counter = _this.reserved_counter + 1;
 					try {

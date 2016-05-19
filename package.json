@@ -1,7 +1,7 @@
 {
   "name": "bsw",
   "description": "Beanstalkd worker framework for co/Promise based handlers",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "homepage": "https://github.com/AfterShip/bsw",
   "author": {
     "name": "AfterShip",
@@ -46,7 +46,7 @@
   },
   "keywords": [
     "beanstalk",
-    "beastalkd",
+    "beanstalkd",
     "bs",
     "fivebeans",
     "queue",
