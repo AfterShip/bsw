@@ -244,14 +244,13 @@ class WorkerConnection extends events.EventEmitter {
 					let res = yield _this.client.reserve_with_timeoutAsync(_this.timeout);
 					let job_id = res[0];
 					let job_info = {tube: _this.tube, id: job_id};
-					let payload = null;
-					if (_this.parse === false) {
-						payload = res[1].toString('utf8');
-					} else {
+					let payload = res[1].toString('utf8');
+					if (_this.parse) {
 						try {
-							payload = JSON.parse(res[1]);
+							let parsed_payload = JSON.parse(payload);
+							if (_.isObject(parsed_payload)) payload = parsed_payload;
 						} catch (parse_error) {
-							payload = res[1].toString('utf8');
+							// nothing here, payload is already a string
 						}
 					}
 					_this.reserved_counter = _this.reserved_counter + 1;
