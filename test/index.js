@@ -86,6 +86,164 @@ describe('Testing WorkerConnection._onConnect', function () {
 	});
 });
 
+describe('Testing WorkerConnection._onConnect parsing', function () {
+	it('should call handler with expected input (string)', function* (done) {
+		let client = {};
+		client.watchAsync = function () {return co(function* () {});};
+		client.reserve_with_timeoutAsync = function () {};
+		sinon.stub(client, 'reserve_with_timeoutAsync', () => co(function* () {return [0, '100'];}));
+
+		let worker = new WorkerConnection(genConfig(function* () {}));
+		sinon.stub(worker, 'handler', co.wrap(function* (payload) {
+			chai.expect(payload).to.equal('100');
+			done();
+		}));
+
+		worker.client = client;
+		yield worker._onConnect();
+	});
+
+	it('should call handler with expected input (object)', function* (done) {
+		let client = {};
+		client.watchAsync = function () {return co(function* () {});};
+		client.reserve_with_timeoutAsync = function () {};
+		sinon.stub(client, 'reserve_with_timeoutAsync', () => co(function* () {return [0, '{"key":"value"}'];}));
+
+		let worker = new WorkerConnection(genConfig(function* () {}));
+		sinon.stub(worker, 'handler', co.wrap(function* (payload) {
+			chai.expect(payload).to.deep.equal({'key': 'value'});
+			done();
+		}));
+
+		worker.client = client;
+		yield worker._onConnect();
+	});
+
+	it('should call handler with expected input (array)', function* (done) {
+		let client = {};
+		client.watchAsync = function () {return co(function* () {});};
+		client.reserve_with_timeoutAsync = function () {};
+		sinon.stub(client, 'reserve_with_timeoutAsync', () => co(function* () {return [0, '["100"]'];}));
+
+		let worker = new WorkerConnection(genConfig(function* () {}));
+		sinon.stub(worker, 'handler', co.wrap(function* (payload) {
+			chai.expect(payload).to.deep.equal(['100']);
+			done();
+		}));
+
+		worker.client = client;
+		yield worker._onConnect();
+	});
+
+	it('should call handler with expected input (string, parsing is disabled) #1', function* (done) {
+		let client = {};
+		client.watchAsync = function () {return co(function* () {});};
+		client.reserve_with_timeoutAsync = function () {};
+		sinon.stub(client, 'reserve_with_timeoutAsync', () => co(function* () {return [0, '["100"]'];}));
+
+		let worker = new WorkerConnection(_.merge(genConfig(function* () {}), {parse: false}));
+		sinon.stub(worker, 'handler', co.wrap(function* (payload) {
+			chai.expect(payload).to.deep.equal('["100"]');
+			done();
+		}));
+
+		worker.client = client;
+		yield worker._onConnect();
+	});
+
+	it('should call handler with expected input (string, parsing is disabled) #2', function* (done) {
+		let client = {};
+		client.watchAsync = function () {return co(function* () {});};
+		client.reserve_with_timeoutAsync = function () {};
+		sinon.stub(client, 'reserve_with_timeoutAsync', () => co(function* () {return [0, '{"key":"value"}'];}));
+
+		let worker = new WorkerConnection(_.merge(genConfig(function* () {}), {parse: false}));
+		sinon.stub(worker, 'handler', co.wrap(function* (payload) {
+			chai.expect(payload).to.deep.equal('{"key":"value"}');
+			done();
+		}));
+
+		worker.client = client;
+		yield worker._onConnect();
+	});
+
+	// it('wrapped function got payload as a string, not a Number', function (done) {
+	// 	class Sample {
+	// 		run(payload, job_info) {
+	// 			this.payload = payload;
+	// 			this.job_info = job_info;
+	// 			return co(function* () {
+	// 				chai.expect(payload).to.equal('100');
+	// 				done();
+	// 			});
+	// 		}
+	// 	}
+
+	// 	let config = {
+	// 		tube: 'sample',
+	// 		handler: Sample,
+	// 		host: 'localhost',
+	// 		port: 11300,
+	// 		max: 5
+	// 	};
+
+	// 	let worker = new WorkerConnection(config);
+	// 	worker.handler('100', {id: 1, tube: 'sample'});
+	// });
+
+	// it('wrapped function got payload as an Array, not a String', function (done) {
+	// 	class Sample {
+	// 		run(payload, job_info) {
+	// 			this.payload = payload;
+	// 			this.job_info = job_info;
+	// 			return co(function* () {
+	// 				try {
+	// 					chai.expect(payload).to.deep.equal(['100']);
+	// 					done();
+	// 				} catch (e) {
+	// 					console.log('e', e);
+	// 				}
+	// 			});
+	// 		}
+	// 	}
+
+	// 	let config = {
+	// 		tube: 'sample',
+	// 		handler: Sample,
+	// 		host: 'localhost',
+	// 		port: 11300,
+	// 		max: 5
+	// 	};
+
+	// 	let worker = new WorkerConnection(config);
+	// 	worker.handler('["100"]', {id: 1, tube: 'sample'});
+	// });
+
+	// it('wrapped function got payload as an Object, not a String', function (done) {
+	// 	class Sample {
+	// 		run(payload, job_info) {
+	// 			this.payload = payload;
+	// 			this.job_info = job_info;
+	// 			return co(function* () {
+	// 				chai.expect(payload).to.equal({key: 'value'});
+	// 				done();
+	// 			});
+	// 		}
+	// 	}
+
+	// 	let config = {
+	// 		tube: 'sample',
+	// 		handler: Sample,
+	// 		host: 'localhost',
+	// 		port: 11300,
+	// 		max: 5
+	// 	};
+
+	// 	let worker = new WorkerConnection(config);
+	// 	worker.handler('{"key":"value"}', {id: 1, tube: 'sample'});
+	// });
+});
+
 describe('Testing WorkerConnection._wrapHandler', function () {
 	it('should give wrapped function', function () {
 		let worker = new WorkerConnection(genConfig(function* () {}));
@@ -105,6 +263,7 @@ describe('Testing WorkerConnection._wrapHandler', function () {
 				});
 			}
 		}
+
 		let config = {
 			tube: 'sample',
 			handler: Sample,
