@@ -11,17 +11,16 @@ const events = require('events');
 class WorkerConnection extends events.EventEmitter {
 	constructor(config) {
 		super();
-		let config_keys = _.keys(config);
 
 		this.client = null;
 		this.reserved_counter = 0;
-		this.parse = _.includes(config_keys, 'parse') ? config.parse : true;
-		this.logging = _.includes(config_keys, 'log') ? config.log : true;
-		this.host = _.includes(config_keys, 'host') ? config.host : '127.0.0.1';
-		this.port = _.includes(config_keys, 'port') ? config.port : 11300;
-		this.tube = _.includes(config_keys, 'tube') ? config.tube : 'default';
-		this.timeout = _.includes(config_keys, 'timeout') ? config.timeout : 1;
-		this.reserved_limit = _.includes(config_keys, 'max') ? config.max : 1;
+		this.parse = config.parse !== undefined ? config.parse : true;
+		this.logging = config.log !== undefined ? config.log : true;
+		this.host = config.host !== undefined ? config.host : '127.0.0.1';
+		this.port = config.port !== undefined ? config.port : 11300;
+		this.tube = config.tube !== undefined ? config.tube : 'default';
+		this.timeout = config.timeout !== undefined ? config.timeout : 1;
+		this.reserved_limit = config.max !== undefined ? config.max : 1;
 
 		this.handler = this._wrapHandler(this.tube, config.handler);
 	}
@@ -229,7 +228,7 @@ class WorkerConnection extends events.EventEmitter {
 					_this.log(`subscribed to ${_this.tube} tube`);
 					break;
 				} catch (e) {
-					yield _this._idle();
+					yield _this._idle(500);
 				}
 			}
 
@@ -267,9 +266,7 @@ class WorkerConnection extends events.EventEmitter {
 	}
 
 	_idle(timeout) {
-		return new Promise((resolve, reject) => {
-			setTimeout(function () {resolve();}, timeout || 10000);
-		});
+		return new Promise(resolve => setTimeout(resolve, timeout || 50));
 	}
 }
 
