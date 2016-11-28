@@ -3,6 +3,7 @@
 const _ = require('lodash');
 const co = require('co');
 const bb = require('bluebird');
+const tmfy = require('tmfy');
 const moment = require('moment');
 const Beanstalk = require('fivebeans').client;
 
@@ -19,17 +20,15 @@ class WorkerConnection extends events.EventEmitter {
 		this.host = config.host !== undefined ? config.host : '127.0.0.1';
 		this.port = config.port !== undefined ? config.port : 11300;
 		this.tube = config.tube !== undefined ? config.tube : 'default';
-		this.timeout = config.timeout !== undefined ? config.timeout : 1;
+		this.reserve_timeout = config.timeout !== undefined ? config.timeout : 1;
+		this.client_timeout = config.client_timeout !== undefined ? config.client_timeout : 250;
+		this.reconnect_delay = config.reconnect_delay !== undefined ? config.reconnect_delay : 500;
 		this.reserved_limit = config.max !== undefined ? config.max : 1;
 
 		this.handler = this._wrapHandler(this.tube, config.handler);
 	}
 
-	log() {
-		// console.log.apply(null, arguments);
-		// return;
-
-		if (!this.logging) return;
+	logArgs() {
 		let _this = this;
 
 		let res_str = `${moment.utc().format('YYYY-MM-DD HH:mm:ss UTC')} ${_this.tube}`;
@@ -45,7 +44,26 @@ class WorkerConnection extends events.EventEmitter {
 			args.push(`${line}\n\t`);
 		}
 		args[args.length - 1] = args[args.length - 1].trim();
+
+		return args;
+	}
+
+	log() {
+		// console.log.apply(null, arguments);
+		// return;
+
+		if (!this.logging) return;
+		let args = this.logArgs.apply(this, arguments);
 		console.log.apply(null, args);
+	}
+
+	err() {
+		// console.error.apply(null, arguments);
+		// return;
+
+		if (!this.logging) return;
+		let args = this.logArgs.apply(this, arguments);
+		console.error.apply(null, args);
 	}
 
 	_wrapHandler(tube, handler) {
@@ -162,111 +180,117 @@ class WorkerConnection extends events.EventEmitter {
 
 	_start() {
 		let _this = this;
-		_this.connected = false;
+		let reconnectCount = 0;
+		let is_connected = false;
 
-		if (_this.client) {
-			_this.stop();
-		}
+		const onConnect = co.wrap(function* () {
+			is_connected = true;
+			_this.log(`connected to beanstalkd at ${_this.host}:${_this.port}`);
 
-		_this.client = new Beanstalk(_this.host, _this.port);
-
-		_this.client.on('connect', function () {
-			_this._onConnect();
-		});
-
-		_this.client.on('error', function (e) {
-			_this._onConnectionError(e);
-		});
-
-		_this.client.on('close', function () {
-			_this._onConnectionClose();
-		});
-
-		_this.client.connect();
-	}
-
-	_onConnectionClose() {
-		let _this = this;
-
-		if (_this.client && _this.connected === true) {
-			_this.log(`beanstalkd connection closed (${_this.tube}), reconnecting to ${_this.host}:${_this.port}`);
-			_this._start();
-		}
-	}
-
-	_onConnectionError(err) {
-		let _this = this;
-		console.log(err);
-
-		co(function* () {
-			if (_this.client) {
-				if (_.includes(['ECONNREFUSED', 'EHOSTDOWN', 'EHOSTUNREACH', 'ETIMEDOUT'], err.code)) {
-					_this.client.end();
-					console.log('after end');
-					yield _this._idle(100);
-					_this._start();
-					console.log('after connect');
+			try {
+				yield _this.client.watchAsyncTimeout(_this.client_timeout, _this.tube);
+			} catch (e) {
+				if (e.toString() !== 'Error: TIMEOUT') {
+					_this.client.emit('error', e);
 				}
 				return;
 			}
 
-			_this.emit('error', err);
-		});
-	}
+			_this.is_connected = true;
+			_this.log(`subscribed to ${_this.tube} tube`);
+			const clientTimeout = _this.reserve_timeout * 1000 + _this.client_timeout;
 
-	_onConnect() {
-		let _this = this;
-
-		co(function* () {
-			_this.connected = true;
-			bb.promisifyAll(_this.client, {multiArgs: true});
-
-			_this.log(`connected to beanstalkd at ${_this.host}:${_this.port}`);
-			while (_this.connected && _this.client) {
-				try {
-					yield _this.client.watchAsync(_this.tube);
-					_this.log(`subscribed to ${_this.tube} tube`);
-					break;
-				} catch (e) {
-					yield _this._idle(500);
-				}
-			}
-
-			while (_this.connected && _this.client) {
+			while (_this.client && _this.is_connected) {
 				if (_this.reserved_counter >= _this.reserved_limit) {
 					// out of quota
 					yield _this._idle();
 					continue;
 				}
 
+				let res;
 				try {
-					let res = yield _this.client.reserve_with_timeoutAsync(_this.timeout);
-					let job_id = res[0];
-					let job_info = {tube: _this.tube, id: job_id};
-					let payload = res[1].toString('utf8');
-					if (_this.parse) {
-						try {
-							let parsed_payload = JSON.parse(payload);
-							if (_.isObject(parsed_payload)) payload = parsed_payload;
-						} catch (parse_error) {
-							// nothing here, payload is already a string
-						}
-					}
-					_this.reserved_counter = _this.reserved_counter + 1;
-					try {
-						_this.handler(payload, job_info);
-					} catch (e) {
-						_this.emit('error', e);
-					}
+					res = yield _this.client.reserve_with_timeoutAsyncTimeout(
+						clientTimeout,
+						_this.reserve_timeout
+					);
 				} catch (e) {
-					// nothing here
+					if (e.toString() === 'Error: TIMEOUT') {
+						return;
+					}
+					continue;
+				}
+
+				let payload = res[1].toString('utf8');
+
+				if (_this.parse) {
+					try {
+						let parsed_payload = JSON.parse(payload);
+						if (_.isObject(parsed_payload)) payload = parsed_payload;
+					} catch (parse_error) {
+						// nothing here, payload is already a string
+					}
+				}
+
+				_this.reserved_counter = _this.reserved_counter + 1;
+
+				try {
+					let id = res[0];  // Job Id
+					let tube = _this.tube;
+					_this.handler(payload, {tube, id});
+				} catch (e) {
+					_this.emit('error', e);
 				}
 			}
 		});
+
+		const onError = co.wrap(function* (err) {
+			_this.err(err);
+			if (_this.client && is_connected) {
+				is_connected = false;
+				_this.is_connected = false;
+				_this.client.destroyConnection();
+			}
+		});
+
+		const onClose = co.wrap(function* () {
+			is_connected = false;
+			_this.is_connected = false;
+			if (_this.stopped) {
+				return;
+			}
+
+			_this.log(`connecting to ${_this.host}:${_this.port}`);
+
+			_this.client = new Beanstalk(_this.host, _this.port);
+			bb.promisifyAll(_this.client, {multiArgs: true});
+			tmfy.timeifyAll(_this.client);
+			_this.client.destroyConnection = function () {
+				if (this.stream) {
+					this.stream.destroy();
+				}
+			};
+			_this.client.on('connect', onConnect);
+			_this.client.on('error', onError);
+			_this.client.on('close', onClose);
+
+			if (reconnectCount > 0) {
+				yield _this._idle(_this.reconnect_delay);
+			}
+			reconnectCount++;
+
+			_this.client.connect();
+			yield _this._idle(_this.client_timeout * 2);
+			if (_this.client && !is_connected) {
+				is_connected = true;
+				_this.client.emit('error', 'timeout on connect');
+			}
+		});
+
+		onClose();
 	}
 
 	_idle(timeout) {
-		return new Promise(resolve => setTimeout(resolve, timeout || 50));
+		return new Promise(r => setTimeout(r, timeout || 50));
 	}
 }
 
