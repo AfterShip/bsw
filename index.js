@@ -164,7 +164,6 @@ class WorkerConnection extends events.EventEmitter {
 		return co(function* () {
 			_this.stopped = false;
 			if (!_this.connected) {
-				_this.log(`connecting to beanstalkd at ${this.host}:${this.port}`);
 				yield _this._start();
 				return;
 			} else {
@@ -189,7 +188,6 @@ class WorkerConnection extends events.EventEmitter {
 
 			const onConnect = co.wrap(function* () {
 				is_connected = true;
-				_this.log(`connected to beanstalkd at ${_this.host}:${_this.port}`);
 
 				try {
 					yield _this.client.watchAsyncTimeout(_this.client_timeout, _this.tube);
@@ -200,7 +198,8 @@ class WorkerConnection extends events.EventEmitter {
 					return;
 				}
 
-				_this.log(`subscribed to ${_this.tube} tube`);
+				_this.log(`connected to beanstalkd at ${_this.host}:${_this.port} and subscribed to the tube`);
+				reconnectCount = 0;
 				const clientTimeout = _this.reserve_timeout * 1000 + _this.client_timeout;
 				resolve();
 
@@ -248,7 +247,7 @@ class WorkerConnection extends events.EventEmitter {
 			});
 
 			const onError = co.wrap(function* (err) {
-				_this.err(err);
+				_this.err(String(err));
 				if (_this.client && is_connected) {
 					is_connected = false;
 					_this.client.destroyConnection();
