@@ -161,132 +161,135 @@ class WorkerConnection extends events.EventEmitter {
 
 	start() {
 		let _this = this;
-		if (!this.connected) {
-			_this.log(`connecting to beanstalkd at ${this.host}:${this.port}`);
-			this._start();
-		} else {
-			_this.log(`client already connected, skipped`);
-		}
+		return co(function* () {
+			_this.stopped = false;
+			if (!_this.connected) {
+				_this.log(`connecting to beanstalkd at ${this.host}:${this.port}`);
+				yield _this._start();
+				return;
+			} else {
+				_this.log(`client already connected, skipped`);
+			}
+		});
 	}
 
 	stop() {
 		let _this = this;
-		_this.connected = false;
+		_this.stopped = true;
 		if (_this.client) {
-			_this.client.end();
-			_this.client = null;
+			_this.client.emit('error', 'stopped');
 		}
 	}
 
 	_start() {
 		let _this = this;
-		let reconnectCount = 0;
-		let is_connected = false;
+		return new Promise(resolve => {
+			let reconnectCount = 0;
+			let is_connected = false;
 
-		const onConnect = co.wrap(function* () {
-			is_connected = true;
-			_this.log(`connected to beanstalkd at ${_this.host}:${_this.port}`);
-
-			try {
-				yield _this.client.watchAsyncTimeout(_this.client_timeout, _this.tube);
-			} catch (e) {
-				if (e.toString() !== 'Error: TIMEOUT') {
-					_this.client.emit('error', e);
-				}
-				return;
-			}
-
-			_this.is_connected = true;
-			_this.log(`subscribed to ${_this.tube} tube`);
-			const clientTimeout = _this.reserve_timeout * 1000 + _this.client_timeout;
-
-			while (_this.client && _this.is_connected) {
-				if (_this.reserved_counter >= _this.reserved_limit) {
-					// out of quota
-					yield _this._idle();
-					continue;
-				}
-
-				let res;
-				try {
-					res = yield _this.client.reserve_with_timeoutAsyncTimeout(
-						clientTimeout,
-						_this.reserve_timeout
-					);
-				} catch (e) {
-					if (e.toString() === 'Error: TIMEOUT') {
-						return;
-					}
-					continue;
-				}
-
-				let payload = res[1].toString('utf8');
-
-				if (_this.parse) {
-					try {
-						let parsed_payload = JSON.parse(payload);
-						if (_.isObject(parsed_payload)) payload = parsed_payload;
-					} catch (parse_error) {
-						// nothing here, payload is already a string
-					}
-				}
-
-				_this.reserved_counter = _this.reserved_counter + 1;
-
-				try {
-					let id = res[0];  // Job Id
-					let tube = _this.tube;
-					_this.handler(payload, {tube, id});
-				} catch (e) {
-					_this.emit('error', e);
-				}
-			}
-		});
-
-		const onError = co.wrap(function* (err) {
-			_this.err(err);
-			if (_this.client && is_connected) {
-				is_connected = false;
-				_this.is_connected = false;
-				_this.client.destroyConnection();
-			}
-		});
-
-		const onClose = co.wrap(function* () {
-			is_connected = false;
-			_this.is_connected = false;
-			if (_this.stopped) {
-				return;
-			}
-
-			_this.log(`connecting to ${_this.host}:${_this.port}`);
-
-			_this.client = new Beanstalk(_this.host, _this.port);
-			bb.promisifyAll(_this.client, {multiArgs: true});
-			tmfy.timeifyAll(_this.client);
-			_this.client.destroyConnection = function () {
-				if (this.stream) {
-					this.stream.destroy();
-				}
-			};
-			_this.client.on('connect', onConnect);
-			_this.client.on('error', onError);
-			_this.client.on('close', onClose);
-
-			if (reconnectCount > 0) {
-				yield _this._idle(_this.reconnect_delay);
-			}
-			reconnectCount++;
-
-			_this.client.connect();
-			yield _this._idle(_this.client_timeout * 2);
-			if (_this.client && !is_connected) {
+			const onConnect = co.wrap(function* () {
 				is_connected = true;
-				_this.client.emit('error', 'timeout on connect');
-			}
-		});
+				_this.log(`connected to beanstalkd at ${_this.host}:${_this.port}`);
 
-		onClose();
+				try {
+					yield _this.client.watchAsyncTimeout(_this.client_timeout, _this.tube);
+				} catch (e) {
+					if (e.toString() !== 'Error: TIMEOUT') {
+						_this.client.emit('error', e);
+					}
+					return;
+				}
+
+				_this.log(`subscribed to ${_this.tube} tube`);
+				const clientTimeout = _this.reserve_timeout * 1000 + _this.client_timeout;
+				resolve();
+
+				while (_this.client && is_connected) {
+					if (_this.reserved_counter >= _this.reserved_limit) {
+						// out of quota
+						yield _this._idle();
+						continue;
+					}
+
+					let res;
+					try {
+						res = yield _this.client.reserve_with_timeoutAsyncTimeout(
+							clientTimeout,
+							_this.reserve_timeout
+						);
+					} catch (e) {
+						if (e.toString() === 'Error: TIMEOUT') {
+							return;
+						}
+						continue;
+					}
+
+					let payload = res[1].toString('utf8');
+
+					if (_this.parse) {
+						try {
+							let parsed_payload = JSON.parse(payload);
+							if (_.isObject(parsed_payload)) payload = parsed_payload;
+						} catch (parse_error) {
+							// nothing here, payload is already a string
+						}
+					}
+
+					_this.reserved_counter = _this.reserved_counter + 1;
+
+					try {
+						let id = res[0];  // Job Id
+						let tube = _this.tube;
+						_this.handler(payload, {tube, id});
+					} catch (e) {
+						_this.emit('error', e);
+					}
+				}
+			});
+
+			const onError = co.wrap(function* (err) {
+				_this.err(err);
+				if (_this.client && is_connected) {
+					is_connected = false;
+					_this.client.destroyConnection();
+				}
+			});
+
+			const onClose = co.wrap(function* () {
+				is_connected = false;
+				if (_this.stopped) {
+					return;
+				}
+
+				_this.log(`connecting to ${_this.host}:${_this.port}`);
+
+				_this.client = new Beanstalk(_this.host, _this.port);
+				bb.promisifyAll(_this.client, {multiArgs: true});
+				tmfy.timeifyAll(_this.client);
+				_this.client.destroyConnection = function () {
+					if (this.stream) {
+						this.stream.destroy();
+					}
+				};
+				_this.client.on('connect', onConnect);
+				_this.client.on('error', onError);
+				_this.client.on('close', onClose);
+
+				if (reconnectCount > 0) {
+					yield _this._idle(_this.reconnect_delay);
+				}
+				reconnectCount++;
+
+				_this.client.connect();
+				yield _this._idle(_this.client_timeout * 2);
+				if (_this.client && !is_connected) {
+					is_connected = true;
+					_this.client.emit('error', 'timeout on connect');
+				}
+			});
+
+			onClose();
+		});
 	}
 
 	_idle(timeout) {
