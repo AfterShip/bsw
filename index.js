@@ -151,6 +151,36 @@ class WorkerConnection extends events.EventEmitter {
 		}
 	}
 
+	/**
+	 * Stop bsw worker gracefully
+	 * @param {Object} params
+	 * @param {Number} params.force_exit_threshold force exit if reach number of checking
+	 * @param {Number} params.timeout timeout between each checking
+	 * @returns <Promise>
+	 *
+	 * @memberOf WorkerConnection
+ 	*/
+	stopGracefully(params) {
+		let _this = this;
+		return co(function*() {
+			params = params || {};
+
+			// Trigger not to reserve jobs
+			_this.connected = false;
+
+			// Exit in 2 mintues anyway
+			let force_exit_threshold = params.force_exit_threshold || 0;
+			let times = 0;
+
+			while (_this.reserved_counter > 0 && times < force_exit_threshold) {
+				yield _this._idle(params.timeout || 2000);
+				times++;
+			}
+
+			_this.stop();
+		});
+	}
+
 	stop() {
 		let _this = this;
 		_this.connected = false;
