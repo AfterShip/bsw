@@ -12,6 +12,17 @@ const handler = require('./consumer_handler');
 		reserve_timeout: 1,
 		handler: handler
 	});
+
+	// Error handling
+	consumer.on('error', (e) => {
+		consumer.log('error:', e);
+	});
+
+	// Stop event
+	consumer.on('close', () => {
+		consumer.log('connection closed!');
+	});
+
 	await consumer.start();
 
 	// Consumer runs for 3s

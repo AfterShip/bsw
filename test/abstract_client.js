@@ -31,8 +31,8 @@ describe('AbstractClient', () => {
 
 		callbacks = {
 			_onConnect: sinon.stub().returns(Promise.resolve()),
-			_onConnectionError: sinon.stub().returns(Promise.resolve()),
-			_onConnectionClose: sinon.stub().returns(Promise.resolve())
+			errorCallback: sinon.stub(),
+			closeCallback: sinon.stub()
 		};
 
 		const AbstractClient = proxyquire('../lib/abstract_client', {
@@ -57,15 +57,15 @@ describe('AbstractClient', () => {
 						},
 						error: function () {
 							// trigger event 'error'
-							events_map.error();
+							events_map.error(new Error('error case'));
 						}
 					};
 				}
 			}
 		});
 		abstract_client = new AbstractClient(config);
-		abstract_client._onConnectionError = callbacks._onConnectionError;
-		abstract_client._onConnectionClose = callbacks._onConnectionClose;
+		abstract_client.on('error', callbacks.errorCallback);
+		abstract_client.on('close', callbacks.closeCallback);
 	});
 
 	describe('testing function start()', () => {
@@ -82,14 +82,15 @@ describe('AbstractClient', () => {
 			expect(callbacks._onConnect).to.have.property('called', true);
 		});
 
-		it('should have called _onConnectionError() when error thrown', async () => {
+		it('should have handled error event when start() threw error', async () => {
 			abstract_client._onConnect = async function () {
 				// mock trigger five beans error event
 				abstract_client.client.error();
 			};
 			await abstract_client.start();
 
-			expect(callbacks._onConnectionError).to.have.property('called', true);
+			expect(callbacks.errorCallback).to.have.property('called', true);
+			expect(callbacks.errorCallback.args[0][0]).to.deep.equal(new Error('error case'));
 		});
 	});
 
@@ -110,7 +111,21 @@ describe('AbstractClient', () => {
 			await abstract_client.start();
 			abstract_client.stop();
 
-			expect(callbacks._onConnectionClose).to.have.property('called', true);
+			expect(callbacks.closeCallback).to.have.property('called', true);
+		});
+
+		it('should have called errorCallback when stop function throws error', async () => {
+			await abstract_client.start();
+
+			// mock fivebeans end error
+			abstract_client.client.end = () => {
+				throw new Error('close error');
+			};
+			
+			abstract_client.stop();
+
+			expect(callbacks.errorCallback).to.have.property('called', true);
+			expect(callbacks.errorCallback.args[0][0]).to.deep.equal(new Error('close error'));
 		});
 	});
 

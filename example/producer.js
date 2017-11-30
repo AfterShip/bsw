@@ -9,6 +9,17 @@ const config = require(`./config.json`);
 		port: config.port,
 		tube: config.tube
 	});
+
+	// Error handling
+	producer.on('error', (e) => {
+		producer.log('error:', e);
+	});
+	
+	// Stop event
+	producer.on('close', () => {
+		producer.log('connection closed!');
+	});
+
 	await producer.start();
 	
 	await producer.putJob({
