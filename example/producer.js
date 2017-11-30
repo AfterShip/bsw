@@ -1,21 +1,52 @@
 'use strict';
 
-const Client = require('fivebeans').client;
-const fs = require('fs');
-const config = JSON.parse(fs.readFileSync(`${__dirname}/config.json`));
+const Producer = require('../index').Producer;
+const config = require(`./config.json`);
 
-let client = new Client(config.host, config.port);
-client.on('connect', function () {
-	console.log('connected');
-	client.use(config.tube, function (err, tname) {
-		console.log('used');
-		client.put(0, 0, 60, JSON.stringify({throw: true, result: 'success'}), () => {});
-		client.put(0, 0, 60, JSON.stringify({throw: true, result: 'bury'}), () => {});
-		client.put(0, 0, 60, JSON.stringify({throw: true, result: ['release', 15]}), () => {});
-		client.put(0, 0, 60, JSON.stringify({throw: false, result: 'success'}), () => {});
-		client.put(0, 0, 60, JSON.stringify({throw: false, result: 'bury'}), () => {});
-		client.put(0, 0, 60, JSON.stringify({throw: false, result: ['release', 15]}), () => {});
+(async () => {
+	const producer = new Producer({
+		host: config.host,
+		port: config.port,
+		tube: config.tube
 	});
-});
+	await producer.start();
+	
+	await producer.putJob({
+		payload: JSON.stringify({throw: true, result: 'success'}),
+		priority: 0,
+		delay: 0,
+		ttr: 60
+	});
+	await producer.putJob({
+		payload: JSON.stringify({throw: true, result: 'bury'}),
+		priority: 0,
+		delay: 0,
+		ttr: 60
+	});
+	await producer.putJob({
+		payload: JSON.stringify({throw: true, result: ['release', 15]}),
+		priority: 0,
+		delay: 0,
+		ttr: 60
+	});
+	await producer.putJob({
+		payload: JSON.stringify({throw: false, result: 'success'}),
+		priority: 0,
+		delay: 0,
+		ttr: 60
+	});
+	await producer.putJob({
+		payload: JSON.stringify({throw: false, result: 'bury'}),
+		priority: 0,
+		delay: 0,
+		ttr: 60
+	});
+	await producer.putJob({
+		payload: JSON.stringify({throw: false, result: ['release', 15]}),
+		priority: 0,
+		delay: 0,
+		ttr: 60
+	});
 
-client.connect();
+	producer.stop();
+})();
