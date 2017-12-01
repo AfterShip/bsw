@@ -5,6 +5,7 @@ const config = require('./config.json');
 
 (async () => {
 	const producer = new Producer({
+		enable_logging: true,
 		host: config.host,
 		port: config.port,
 		tube: config.tube
@@ -12,12 +13,12 @@ const config = require('./config.json');
 
 	// Error handling
 	producer.on('error', (e) => {
-		producer.log('error:', e);
+		console.log('error:', e);
 	});
 
 	// Stop event
 	producer.on('close', () => {
-		producer.log('connection closed!');
+		console.log('connection closed!');
 	});
 
 	await producer.start();
@@ -60,4 +61,6 @@ const config = require('./config.json');
 	});
 
 	producer.stop();
-})();
+})().catch((e) => {
+	console.log(e);
+});

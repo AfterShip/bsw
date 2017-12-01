@@ -6,21 +6,26 @@ const handler = require('./consumer_handler');
 
 (async () => {
 	const consumer = new Consumer({
+		enable_logging: true,
 		host: config.host,
 		port: config.port,
 		tube: config.tube,
 		reserve_timeout: 1,
-		handler: handler
+		max_processing_jobs: 3,
+		handler: handler,
+		final: async function (action, delay, result_or_error) {
+			console.log(`final() ==> action=${action}, delay=${delay}, result_or_error=${result_or_error}`);
+		}
 	});
 
 	// Error handling
 	consumer.on('error', (e) => {
-		consumer.log('error:', e);
+		console.log('error:', e);
 	});
 
 	// Stop event
 	consumer.on('close', () => {
-		consumer.log('connection closed!');
+		console.log('connection closed!');
 	});
 
 	await consumer.start();
@@ -29,4 +34,6 @@ const handler = require('./consumer_handler');
 	setTimeout(() => {
 		consumer.stop();
 	}, 3 * 1000);
-})();
+})().catch((e) => {
+	console.log(e);
+});
