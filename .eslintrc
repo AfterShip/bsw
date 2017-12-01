@@ -1,3 +1,6 @@
 {
-	"extends": "aftership"
+	"extends": "aftership",
+	"env": {
+		"mocha": true
+	}
 }

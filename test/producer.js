@@ -2,15 +2,13 @@
 
 require('co-mocha');
 
-const _ = require('lodash');
-const co = require('co');
 const proxyquire = require('proxyquire');
 const sinon = require('sinon');
-const expect = require('chai').expect;
+const {expect} = require('chai');
 
 const config = {
 	tube: 'sample',
-	handler: async function() {
+	handler: async function () {
 		return 'success';
 	},
 	host: 'localhost',
@@ -32,14 +30,14 @@ describe('Producer', () => {
 			useAsync: sinon.stub().returns(Promise.resolve()),
 			putAsync: sinon.stub().returns(Promise.resolve('100'))
 		};
-		
+
 		const Producer = proxyquire('../lib/producer', {
 			'./abstract_client': proxyquire('../lib/abstract_client', {
 				'fivebeans': {
-					client: function() {
+					client: function () {
 						return {
 							on: function (ev, cb) {
-								for (let event of Object.keys(events_map)) {
+								for (const event of Object.keys(events_map)) {
 									if (event === ev) {
 										events_map[event] = cb;
 									}
@@ -63,7 +61,6 @@ describe('Producer', () => {
 	});
 
 	describe('testing function putJob()', () => {
-
 		it('should call putAsync() with correct parameters with string payload', async () => {
 			await producer.putJob({
 				payload: 'string payload',

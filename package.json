@@ -19,8 +19,9 @@
     "node": ">= 8.9.0"
   },
   "scripts": {
-    "lint": "grunt lint",
-    "test": "grunt lint && grunt coverage"
+    "lint": "eslint .",
+    "test:unit": "nyc mocha test/",
+    "test": "npm run lint && npm run test:unit"
   },
   "dependencies": {
     "bluebird": "^3.3.4",
@@ -33,14 +34,11 @@
   "devDependencies": {
     "chai": "^3.5.0",
     "co-mocha": "^1.1.2",
-    "eslint": "^1.10.3",
-    "eslint-config-aftership": "^4.0.0",
-    "grunt": "^0.4.5",
-    "grunt-eslint": "^17.3.1",
-    "grunt-mocha-istanbul": "^3.0.1",
+    "eslint": "^4.0.0",
+    "eslint-config-aftership": "^4.2.0",
     "istanbul": "^0.4.1",
-    "load-grunt-config": "^0.19.1",
     "mocha": "^2.3.4",
+    "nyc": "^11.3.0",
     "pre-commit": "^1.1.2",
     "proxyquire": "^1.8.0",
     "sinon": "^1.17.3",
@@ -57,7 +55,7 @@
   ],
   "license": "MIT",
   "pre-commit": [
-    "lint"
+	  "lint"
   ],
   "private": false
 }

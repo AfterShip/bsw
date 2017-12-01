@@ -1,7 +1,7 @@
 'use strict';
 
-const Consumer = require('../index').Consumer;
-const config = require(`./config.json`);
+const {Consumer} = require('../index');
+const config = require('./config.json');
 const handler = require('./consumer_handler');
 
 (async () => {
@@ -30,6 +30,3 @@ const handler = require('./consumer_handler');
 		consumer.stop();
 	}, 3 * 1000);
 })();
-
-
-

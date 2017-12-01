@@ -2,16 +2,14 @@
 
 require('co-mocha');
 
-const _ = require('lodash');
-const co = require('co');
 const proxyquire = require('proxyquire');
 const sinon = require('sinon');
-const expect = require('chai').expect;
+const {expect} = require('chai');
 const timemachine = require('timemachine');
 
 const config = {
 	tube: 'sample',
-	handler: async function() {
+	handler: async function () {
 		return 'success';
 	},
 	host: 'localhost',
@@ -37,10 +35,10 @@ describe('AbstractClient', () => {
 
 		const AbstractClient = proxyquire('../lib/abstract_client', {
 			'fivebeans': {
-				client: function() {
+				client: function () {
 					return {
 						on: function (ev, cb) {
-							for (let event of Object.keys(events_map)) {
+							for (const event of Object.keys(events_map)) {
 								if (event === ev) {
 									events_map[event] = cb;
 								}
@@ -78,7 +76,7 @@ describe('AbstractClient', () => {
 		it('should have called _onConnect() when connection established', async () => {
 			abstract_client._onConnect = callbacks._onConnect;
 			await abstract_client.start();
-			
+
 			expect(callbacks._onConnect).to.have.property('called', true);
 		});
 
@@ -121,7 +119,7 @@ describe('AbstractClient', () => {
 			abstract_client.client.end = () => {
 				throw new Error('close error');
 			};
-			
+
 			abstract_client.stop();
 
 			expect(callbacks.errorCallback).to.have.property('called', true);
@@ -176,5 +174,4 @@ describe('AbstractClient', () => {
 			timemachine.reset();
 		});
 	});
-
 });

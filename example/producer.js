@@ -1,7 +1,7 @@
 'use strict';
 
-const Producer = require('../index').Producer;
-const config = require(`./config.json`);
+const {Producer} = require('../index');
+const config = require('./config.json');
 
 (async () => {
 	const producer = new Producer({
@@ -14,14 +14,14 @@ const config = require(`./config.json`);
 	producer.on('error', (e) => {
 		producer.log('error:', e);
 	});
-	
+
 	// Stop event
 	producer.on('close', () => {
 		producer.log('connection closed!');
 	});
 
 	await producer.start();
-	
+
 	await producer.putJob({
 		payload: JSON.stringify({throw: true, result: 'success'}),
 		priority: 0,
