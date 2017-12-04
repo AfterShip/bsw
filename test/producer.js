@@ -5,6 +5,7 @@ require('co-mocha');
 const proxyquire = require('proxyquire');
 const sinon = require('sinon');
 const {expect} = require('chai');
+const FivebeansMock = require('./lib/fivebeans_mock');
 
 const config = {
 	tube: 'sample',
@@ -19,13 +20,7 @@ describe('Producer', () => {
 	let producer;
 	let stubs;
 
-	beforeEach(() => {
-		const events_map = {
-			connect: null,
-			error: null,
-			close: null
-		};
-
+	beforeEach(async () => {
 		stubs = {
 			useAsync: sinon.stub().returns(Promise.resolve()),
 			putAsync: sinon.stub().returns(Promise.resolve('100'))
@@ -33,31 +28,16 @@ describe('Producer', () => {
 
 		const Producer = proxyquire('../lib/producer', {
 			'./abstract_client': proxyquire('../lib/abstract_client', {
-				'fivebeans': {
-					client: function () {
-						return {
-							on: function (ev, cb) {
-								for (const event of Object.keys(events_map)) {
-									if (event === ev) {
-										events_map[event] = cb;
-									}
-								}
-								return this;
-							},
-							connect: function () {
-								// trigger event 'connect'
-								events_map.connect();
-							},
-							useAsync: stubs.useAsync,
-							putAsync: stubs.putAsync
-						};
-					}
-				}
+				'fivebeans': FivebeansMock
 			})
 		});
 
 		producer = new Producer(config);
-		producer.start();
+		await producer.start();
+
+		// set stubs
+		producer.client.useAsync = stubs.useAsync;
+		producer.client.putAsync = stubs.putAsync;
 	});
 
 	describe('testing function putJob()', () => {

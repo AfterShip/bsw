@@ -10,8 +10,10 @@ module.exports = async function (payload, job_info) {
 
 	// or payload maybe an object
 	if (payload.throw) {
+		// throw action('success' or ['release', 15])
 		throw payload.result;
 	}
 
+	// returns action('success' or ['release', 15])
 	return payload.result;
 };

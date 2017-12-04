@@ -6,12 +6,10 @@ const proxyquire = require('proxyquire');
 const sinon = require('sinon');
 const {expect} = require('chai');
 const timemachine = require('timemachine');
+const FivebeansMock = require('./lib/fivebeans_mock');
 
 const config = {
 	tube: 'sample',
-	handler: async function () {
-		return 'success';
-	},
 	host: 'localhost',
 	port: 11300
 };
@@ -21,12 +19,6 @@ describe('AbstractClient', () => {
 	let callbacks;
 
 	beforeEach(() => {
-		const events_map = {
-			connect: null,
-			error: null,
-			close: null
-		};
-
 		callbacks = {
 			_onConnect: sinon.stub().returns(Promise.resolve()),
 			errorCallback: sinon.stub(),
@@ -34,32 +26,7 @@ describe('AbstractClient', () => {
 		};
 
 		const AbstractClient = proxyquire('../lib/abstract_client', {
-			'fivebeans': {
-				client: function () {
-					return {
-						on: function (ev, cb) {
-							for (const event of Object.keys(events_map)) {
-								if (event === ev) {
-									events_map[event] = cb;
-								}
-							}
-							return this;
-						},
-						connect: function () {
-							// trigger event 'connect'
-							events_map.connect();
-						},
-						end: function () {
-							// trigger event 'close'
-							events_map.close();
-						},
-						error: function () {
-							// trigger event 'error'
-							events_map.error(new Error('error case'));
-						}
-					};
-				}
-			}
+			'fivebeans': FivebeansMock
 		});
 		abstract_client = new AbstractClient(config);
 		abstract_client.on('error', callbacks.errorCallback);
@@ -83,7 +50,7 @@ describe('AbstractClient', () => {
 		it('should have handled error event when start() threw error', async () => {
 			abstract_client._onConnect = async function () {
 				// mock trigger five beans error event
-				abstract_client.client.error();
+				abstract_client.client.error(new Error('error case'));
 			};
 			await abstract_client.start();
 
