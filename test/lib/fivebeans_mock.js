@@ -11,20 +11,40 @@ class FivebeansMock extends events.EventEmitter {
 		this.emit('close');
 	}
 
+	async putAsync() {
+		return this;
+	}
+
+	async useAsync() {
+		return this;
+	}
+
+	async watchAsync() {
+		return this;
+	}
+
+	async reserve_with_timeoutAsync() {
+		this.log('reserve_with_timeoutAsync() is called');
+		return {
+			job_id: 1,
+			payload: 'string payload'
+		};
+	}
+
+	async buryAsync() {
+		return this;
+	}
+
+	async destroyAsync() {
+		return this;
+	}
+
+	async releaseAsync() {
+		return this;
+	}
+
 	error(e) {
 		this.emit('error', e);
-	}
-
-	putAsync() {
-		return Promise.resolve(this);
-	}
-
-	useAsync() {
-		return Promise.resolve(this);
-	}
-
-	watchAsync() {
-		return Promise.resolve(this);
 	}
 }
 

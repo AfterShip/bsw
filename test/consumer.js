@@ -6,7 +6,9 @@ const proxyquire = require('proxyquire');
 const sinon = require('sinon');
 const {expect} = require('chai');
 const FivebeansMock = require('./lib/fivebeans_mock');
-const AbstractClient = require('../lib/abstract_client');
+const AbstractClient = proxyquire('../lib/abstract_client', {
+	'fivebeans': FivebeansMock
+});
 
 const config = {
 	tube: 'sample',
@@ -22,10 +24,12 @@ describe('Consumer', () => {
 
 	beforeEach(async () => {
 		const Consumer = proxyquire('../lib/consumer', {
-			'fivebeans': FivebeansMock
+			'./abstract_client': AbstractClient
 		});
 
 		consumer = new Consumer(config);
+		// _work will start the main loop, need to stub it here
+		consumer._work = sinon.stub().returns(Promise.resolve());
 		await consumer.start();
 	});
 
