@@ -30,10 +30,8 @@ const handler = require('./consumer_handler');
 
 	await consumer.start();
 
-	// Consumer runs for 3s
-	setTimeout(() => {
-		consumer.stop();
-	}, 3 * 1000);
+	// stop the consumer gracefully within 3s
+	await consumer.stopGracefully(3000);
 })().catch((e) => {
 	console.log(e);
 });
