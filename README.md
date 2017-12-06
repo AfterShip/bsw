@@ -2,153 +2,150 @@ BSW is a Node.js framework for beanstalkd workers
 
 [![Build Status](https://travis-ci.org/AfterShip/bsw.svg?branch=master)](https://travis-ci.org/AfterShip/bsw)
 
+### v2.0.0 is the latest version. If you're looking for the README of v1, click this link: https://github.com/AfterShip/bsw/blob/master/README-v1.md
+
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 **Table of Contents**
 
-- [Requiremens](#requiremens)
+- [Requirements](#requirements)
 - [Quick Start](#quick-start)
-- [Handler Class](#handler-class)
+- [Handler Function](#handler-function)
   - [Jobs processing](#jobs-processing)
   - [Post processing](#post-processing)
-- [bsw worker class](#bsw-worker-class)
-  - [Full example](#full-example)
+- [BSW Consumer class](#bsw-consumer-class)
+  - [`async start()` function](#async-start-function)
+  - [`stop()` function](#stop-function)
+  - [`async stopGracefully(timeout)` function](#async-stopgracefullytimeout-function)
+- [BSW Producer class](#bsw-producer-class)
+- [Full example](#full-example)
 - [Contributors](#contributors)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
-## Requiremens
+## Requirements
 
-Node.js v4 or above is required.
+Node.js v8.0.0 or above is required.
 
 ## Quick Start
 
+**Consumer**
 ```javascript
-var Worker = require('bsw');
+const {Consumer} = require('bsw');
 
-class Handler {
-	* run(payload, job_info) {
-		console.log('Hello world!');
-	}
-}
+(async () => {
+	const consumer = new Consumer({
+		host: '127.0.0.1',
+		port: 27017,
+		tube: 'example',
+		handler: async function (payload, job_info) {
+			console.log('processing job: ', payload);
+			return 'success';
+		}
+	});
 
-var worker = new Worker({tube: 'example', handler: Handler});
-worker.start();
+	// handling errors
+	consumer.on('error', (e) => {
+		console.log('error:', e);
+	});
+
+	await consumer.start();
+})();
 ```
 
-## Handler Class
+**Producer**
+```javascript
+const {Producer} = require('bsw');
 
-Handler must be an [ES6 class](https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Classes).
+(async () => {
+	const producer = new Producer({
+		host: '127.0.0.1',
+		port: 27017,
+		tube: 'example'
+	});
 
-> NOTE: **handler class is not a singletone!**
->
-> A new instance of handler class would be created for each job
+	// handling errors
+	consumer.on('error', (e) => {
+		console.log('error:', e);
+	});
 
-To process jobs each handler **must** provide either:
-- a `run` function that returns a `Promise` object
-- or a `run` generator function for [co](https://github.com/tj/co) runner
+	await producer.start();
 
-`run` interface:
+	await producer.putJob({
+		payload: JSON.stringify({throw: true, result: 'success'}),
+		priority: 0,
+		delay: 0,
+		ttr: 60
+	});
 
-**run (payload, job_info)**
+	producer.stop();
+})();
+```
+
+## Handler Function
+
+In v2, handler must be an async function(https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/async_function)
+
+`handler` interface:
+
+**async handler(payload, job_info)**
 - **payload:** beanstalk job payload string or object (if job is a valid JSON)
 - **job_info:** job details
 - **job_info.id:** job id
 - **job_info.tube:** job tube
 
-`run` definition examples:
-
-- Directly defined Promise
+`handler` definition examples:
 ```javascript
-class Handler {
-	run(payload, job_info) {
-		return new Promise(function(resolve, reject) {
-			console.log('Hello world!');
-			resolve();
-		});
-	}
-}
-```
-
-- Promise returned by [co](https://github.com/tj/co)
-```javascript
-var co = require('co');
-class Handler {
-	run(payload, job_info) {
-		return co(function() {
-			console.log('Hello world!');
-		});
-	}
-}
-```
-
-- Generator function
-```javascript
-class Handler {
-	* run(payload, job_info) {
-		console.log('Hello world!');
-	}
+async handler(payload, job_info) {
+	console.log('Hello world!');
 }
 ```
 
 ### Jobs processing
 
-After job reservation, `run` would be called. Each job must get one of the following status after processing:
+After job reservation, `handler` would be called. Each job must get one of the following status after processing:
 - **success:** job processed succesfully and must be deleted from beanstalkd
 - **bury:** job processing failed, it must be marked as buried in beanstalkd
 - **release + delay:** job must be reserved again after delay
 
-To report the job status, it must be returned/resolved or thrown/rejected from run function:
+To report the job status, it must be returned or thrown from handler function:
 ```javascript
 // delete job
 return 'success';
 throw 'success';
-resolve('success');
-reject('success');
 
 // bury job
 return 'bury';
 throw 'bury';
-resolve('bury');
-reject('bury');
 
 // reput job without delay
 return 'release';
 throw 'release';
-resolve('release');
-reject('release');
 
 // reput job with 10s delay
 return ['release', 10];
 throw ['release', 10];
-resolve(['release', 10]);
-reject(['release', 10]);
 ```
 
 Default statuses:
-- **success** if `run` returned/resolved with not known keyword
-- **bury** if `run` thrown/rejected with not known keyword
+- **success** if `handler` returned with unknown keyword
+- **bury** if `handler` thrown with unknown keyword
 
 For example:
 ```javascript
-class Handler {
-	* run(payload, job_info) {
-		try {
-			yield mayThrow();
-		} catch (e) {
-			return 'bury'
-		}
-
-		return 'success';
+async handler(payload, job_info) {
+	try {
+		await mayThrow();
+	} catch (e) {
+		return 'bury'
 	}
+	return 'success';
 }
 ```
 equals to
 ```javascript
-class Handler {
-	* run(payload, job_info) {
-		yield mayThrow();
-	}
+async handler(payload, job_info) {
+	await mayThrow();
 }
 ```
 
@@ -157,52 +154,119 @@ You may add an optional post processing of jobs, to do this add `final` function
 
 > NOTE: post processing apply after job status was sent to beanstalkd
 
-**final (status, delay, result)**
+**async final(status, delay, result)**
 - **status:** job status (`success`, `release` or `bury`)
 - **delay:** job delay in seconds for `release` or `null`
-- **result:** a value returned/thworn (resolved/rejected) from `run`
+- **result:** a value returned/thowrn from `handler`
 
-## bsw worker class
+## BSW Consumer class
 
-BSW worker class is used to connect to beanstalkd server and subscribe to a tube
+BSW Consumer class is used to connect to beanstalkd server and subscribe to a tube
 
-BSW constructor takes configuration object:
-- **handler:** handler class or path to handler
+The Consumer constructor takes configuration object:
 - **host:** beanstalkd host (default: `'127.0.0.1'`)
 - **port:** beanstalkd port (default: `11300`)
 - **tube:** beanstalkd tube (default: `'default'`)
-- **max:** Max number of simultaneous jobs reserved (default: `1`)
-- **log:** Enable jobs logging (default: `true`)
+- **enable_logging:** enable logging to console (default value `false`)
+- **reserve_timeout:** timeout value(in seconds) of job reservation (default value `30`)
+- **max_processing_jobs:** max number of simultaneous jobs reserved (default: `1`)
+- **auto_reconnect:** flag for reconnection behavior when connection is accidentally closed, which means it's not closed by client side and fivebeans will fire a `close` event (default value `false`)
+- **handler:** handler async function (mandatory, MUST be an async function)
+- **final:** final async function (optional, MUST be an async function)
 
-`start()` function would start the worker.
+### `async start()` function
+Start the worker.
+* NOTE async function can be called directly, or called inside another async function with `await` key word.
+* If call `consumer.start()` directly, it will return immediately and process the actual start action asynchonously
+* If call `await consumer.start()` inside an async function, it will wait until the start process finishes and then process the code at the back
 
 Example:
 ```javascript
-var Worker = require('bsw');
-var worker = new Worker({
+const consumer = new Consumer({
+	host: '127.0.0.1',
+	port: 27017,
 	tube: 'example',
-	handler: __direname + '/handler' // or require(__direname + '/handler')
+	handler: async function (payload, job_info) {
+		console.log('processing job: ', payload);
+		return 'success';
+	}
 });
-worker.start();
+
+// could be called directly without await
+consumer.start();
+// this line will be immediately called because start() is async function
+console.log('do something');
+
+// or could be called inside async function context
+(async () => {
+	await consumer.start();
+	// this line will be called after start() returns
+	console.log('do something');
+})();
 ```
 
-### Full example
+### `stop()` function
+Stop the consumer immediately, and any processing jobs won't report to beanstalk.
+Example
+```javascript
+consumer.stop();
+```
+
+### `async stopGracefully(timeout)` function
+Stop the consumer in a more graceful way. Will wait until all the processing jobs are done and reported to beanstalk, or wait for a user-specific timeout value.
+
+Example
+```javascript
+// stop the consumer gracefully within 3s
+await consumer.stopGracefully(3000);
+```
+
+## BSW Producer class
+
+BSW Producer class is used to connect to beanstalkd server and put jobs to a tube
+
+The Producer constructor takes configuration object:
+- **host:** beanstalkd host (default: `'127.0.0.1'`)
+- **port:** beanstalkd port (default: `11300`)
+- **tube:** beanstalkd tube (default: `'default'`)
+- **enable_logging:** enable logging to console (default value `false`)
+
+### `async start()` function
+Same as Consumer class.
+
+### `stop()` function
+Same as Consumer class.
+
+### `async putJob(job)` function
+Put jobs to the tube. Receives an `job` object which has the following attributes:
+- **payload:** job payload, type is String
+- **priority:** job priority, 0 is highest, type is Integer
+- **delay:** time(in seconds) for a job to transfer from Delayed state to Ready state, type is Integer
+- **ttr:** time(in seconds) for a reserved job to become Ready state, type is Integer
+
+Example:
+```javascript
+await producer.putJob({
+	payload: JSON.stringify({key: 'value'}),
+	priority: 0,
+	delay: 0,
+	ttr: 60
+});
+```
+
+## Full example
 
 Find the full example in `example` directory:
 
-- **config.json:** defines beanstalkd connection and a tube name for both producer and consumer
-- **producer.js:** use `fivebeans` beanstalkd client to put jobs to the queue (make sure to install `fivebeans` first: `npm install fivebeans`)
-- **consumer_handler.js:** handler class for BSW worker
-- **consumer.js:** BSW worker class usage
-
-To run, copy the project, then:
+To run, clone the project, then:
 ```
 > npm install
+(If you have `yarn` installed in your machine, we recommand you use `yarn install` instead)
 > cd example
 > node producer.js
-> CTRL+C
 > node consumer.js
 ```
 
 ## Contributors
-- Fedor Korshunov - [view contributions](https://github.com/aftership/bsw/commits?author=fedor)
+- Fedor Korshunov (for v1) - [view contributions](https://github.com/aftership/bsw/commits?author=fedor)
+- Vence Lin (for v2) - [view contributions](https://github.com/aftership/bsw/commits?author=vence722)

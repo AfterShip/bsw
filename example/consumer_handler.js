@@ -1,26 +1,19 @@
 'use strict';
 
-class WorkerHandler {
-	* run(payload, job_info) {
-		// Handler function MUST return a Promise or be a Generator function
-		console.log('\tpayload:', payload, '\n\tjob info:', job_info);
+module.exports = async function (payload, job_info) {
+	console.log('\tpayload:', payload, '\n\tjob info:', job_info);
 
-		// payload maybe a string
-		if (typeof payload !== 'object') {
-			return payload;
-		}
-
-		// or payload maybe an object
-		if (payload.throw) {
-			throw payload.result;
-		}
-
-		return payload.result;
+	// payload maybe a string
+	if (typeof payload !== 'object') {
+		return payload;
 	}
 
-	final(action, delay, result) {
-		console.log('\taction:', action, '\n\tdelay:', delay, '\n\tresult:', result, '\n');
+	// or payload maybe an object
+	if (payload.throw) {
+		// throw action('success' or ['release', 15])
+		throw payload.result;
 	}
-}
 
-module.exports = WorkerHandler;
+	// returns action('success' or ['release', 15])
+	return payload.result;
+};

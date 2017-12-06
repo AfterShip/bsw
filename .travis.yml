@@ -1,11 +1,11 @@
 language: node_js
 node_js:
-  - "4.2.3"
+  - "8"
 sudo: false
 
 notifications:
   email:
-    - fedor@aftership.net
+    - vence@aftership.com
 env:
   - CACHE_DIR=cache
 cache:
