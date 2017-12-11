@@ -65,7 +65,7 @@ const {Producer} = require('bsw');
 	});
 
 	// handling errors
-	consumer.on('error', (e) => {
+	producer.on('error', (e) => {
 		console.log('error:', e);
 	});
 
