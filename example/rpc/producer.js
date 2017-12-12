@@ -5,7 +5,7 @@ const {Consumer} = require('../../index');
 
 const config = require('./config.json');
 const replyHandler = require('./reply_handler');
-const uuid = require('node-uuid').v4;
+const uuid = require('uuid').v4;
 
 (async () => {
 	const producer = new Producer({
@@ -15,20 +15,20 @@ const uuid = require('node-uuid').v4;
 		tube: config.tube
 	});
 
-	const replayTubeId = uuid();
-	console.log(`Replay TubeID ${replayTubeId}`);
+	const replyTubeId = uuid();
+	console.log(`Reply TubeID ${replyTubeId}`);
 
-	const replayClient = new Consumer({
+	const replyClient = new Consumer({
 		enable_logging: true,
 		host: config.host,
 		port: config.port,
-		tube: replayTubeId,
+		tube: replyTubeId,
 		reserve_timeout: 1,
 		max_processing_jobs: 1,
 		handler: replyHandler,
 		final: async function (action, delay, result_or_error) {
-			console.log(`[Replay Client] final() ==> action=${action}, delay=${delay}, result_or_error=${JSON.stringify(result_or_error)}`);
-			replayClient.stop();
+			console.log(`[Reply Client] final() ==> action=${action}, delay=${delay}, result_or_error=${JSON.stringify(result_or_error)}`);
+			replyClient.stop();
 		}
 	});
 
@@ -44,17 +44,17 @@ const uuid = require('node-uuid').v4;
 
 	await producer.start();
 
-	// we will start replayConsumer
-	replayClient.on('[Replay Client] error', e => {
-		console.log('error:', e);
+	// we will start replyConsumer
+	replyClient.on('error', e => {
+		console.log('[Reply Client] error:', e);
 	});
 
 	// Stop event
-	replayClient.on('[Replay Client] close', () => {
-		console.log('connection closed!');
+	replyClient.on('close', () => {
+		console.log('[Reply Client] connection closed!');
 	});
 
-	await replayClient.start();
+	await replyClient.start();
 	const randomNumber1 = Math.floor(Math.random() * 10 + 1);
 	const randomNumber2 = Math.floor(Math.random() * 10 + 1);
 
@@ -62,7 +62,7 @@ const uuid = require('node-uuid').v4;
 		payload: JSON.stringify({
 			randomNumber1: randomNumber1,
 			randomNumber2: randomNumber2,
-			replayTubeId: replayTubeId,
+			replyTubeId: replyTubeId,
 			result: 'success'
 		}),
 		priority: 0,

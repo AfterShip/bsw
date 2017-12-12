@@ -6,7 +6,7 @@ const config = require('./config.json');
 module.exports = async function (payload, job_info) {
 	console.log('\tpayload:', payload, '\n\tjob info:', job_info);
 	console.log('JOB is started');
-	console.log('Replay TubeID ' + payload.replayTubeId);
+	console.log('Reply TubeID ' + payload.replyTubeId);
 
 	// do the JOB
 	const calculationResult = payload.randomNumber1 + payload.randomNumber2;
@@ -18,16 +18,16 @@ module.exports = async function (payload, job_info) {
 		enable_logging: true,
 		host: config.host,
 		port: config.port,
-		tube: payload.replayTubeId
+		tube: payload.replyTubeId
 	});
 
 	producer.on('error', e => {
-		console.log('[Replay Producer] error:', e);
+		console.log('[Reply Producer] error:', e);
 	});
 
 	// Stop event
 	producer.on('close', () => {
-		console.log('[Replay Producer] connection closed!');
+		console.log('[Reply Producer] connection closed!');
 	});
 
 	await producer.start();
@@ -35,7 +35,7 @@ module.exports = async function (payload, job_info) {
 	await producer.putJob({
 		payload: JSON.stringify({
 			calculationResult: calculationResult,
-			message: 'Replay Message for ' + payload.replayTubeId,
+			message: 'Reply Message for ' + payload.replyTubeId,
 			result: 'success'
 		}),
 		priority: 0,
