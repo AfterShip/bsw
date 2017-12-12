@@ -5,7 +5,7 @@ const {Consumer} = require('../../index');
 
 const config = require('./config.json');
 const replyHandler = require('./reply_handler');
-const uuid = require('uuid').v4;
+const uuid = require('uuid/v4');
 
 (async () => {
 	const producer = new Producer({
