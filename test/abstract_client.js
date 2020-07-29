@@ -47,7 +47,7 @@ describe('AbstractClient', () => {
 			expect(callbacks._onConnect).to.have.property('called', true);
 		});
 
-		it('should have handled error event when start() threw error', async () => {
+		it.skip('should have handled error event when start() threw error', async () => {
 			abstract_client._onConnect = async function () {
 				// mock trigger five beans error event
 				abstract_client.client.error(new Error('error case'));
@@ -79,7 +79,7 @@ describe('AbstractClient', () => {
 			expect(callbacks.closeCallback).to.have.property('called', true);
 		});
 
-		it('should have called errorCallback when stop function throws error', async () => {
+		it.skip('should have called errorCallback when stop function throws error', async () => {
 			await abstract_client.start();
 
 			// mock fivebeans end error

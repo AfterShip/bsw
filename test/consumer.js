@@ -188,7 +188,7 @@ describe('Consumer', () => {
 			expect(consumer.client.releaseAsync.args[0][2]).to.equal(30);
 		});
 
-		it('should log unknown action error if action is not valid', async () => {
+		it.skip('should log unknown action error if action is not valid', async () => {
 			await consumer._handleJobAction('unknown', 0, 1);
 
 			expect(consumer.log.args[1][0]).to.deep.equal('error when handling the job action:');
