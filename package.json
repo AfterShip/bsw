@@ -1,7 +1,7 @@
 {
   "name": "bsw",
   "description": "Beanstalkd worker framework for co/Promise based handlers",
-  "version": "2.1.0",
+  "version": "3.0.0",
   "homepage": "https://github.com/AfterShip/bsw",
   "author": {
     "name": "AfterShip",
@@ -16,7 +16,7 @@
   },
   "main": "index.js",
   "engines": {
-    "node": ">= 8.9.0"
+    "node": ">= 10"
   },
   "scripts": {
     "lint": "eslint .",
