@@ -1,7 +1,5 @@
 'use strict';
 
-require('co-mocha');
-
 const proxyquire = require('proxyquire');
 const sinon = require('sinon');
 const {expect} = require('chai');
