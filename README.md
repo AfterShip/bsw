@@ -2,8 +2,6 @@ BSW is a Node.js framework for beanstalkd workers
 
 [![Build Status](https://travis-ci.org/AfterShip/bsw.svg?branch=master)](https://travis-ci.org/AfterShip/bsw)
 
-### v2.0.0 is the latest version. If you're looking for the README of v1, click this link: https://github.com/AfterShip/bsw/blob/master/README-v1.md
-
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 **Table of Contents**
@@ -25,7 +23,13 @@ BSW is a Node.js framework for beanstalkd workers
 
 ## Requirements
 
-Node.js v8.0.0 or above is required.
+Node.js v10 or above is required.
+
+## Changelog
+
+### 3.0
+
+Updated dependencies and dropped node 8 support.
 
 ## Quick Start
 
