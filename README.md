@@ -1,7 +1,5 @@
 BSW is a Node.js framework for beanstalkd workers
 
-[![Build Status](https://travis-ci.org/AfterShip/bsw.svg?branch=master)](https://travis-ci.org/AfterShip/bsw)
-
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 **Table of Contents**
@@ -270,7 +268,3 @@ To run, clone the project, then:
 > node producer.js
 > node consumer.js
 ```
-
-## Contributors
-- Fedor Korshunov (for v1) - [view contributions](https://github.com/aftership/bsw/commits?author=fedor)
-- Vence Lin (for v2) - [view contributions](https://github.com/aftership/bsw/commits?author=vence722)
